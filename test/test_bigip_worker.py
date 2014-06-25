@@ -53,12 +53,26 @@ class TestBigipWorker(TestCase):
         })
 
         ##############################################################
-        # Create a valid in/outofrotation parameters dict
+        # Create valid in/outofrotation parameters dicts
         self.rotation_params_good = copy.deepcopy(_base_params)
         # Rotation commands require a list of hosts
         self.rotation_params_good['parameters'].update({
             'hosts': ['localhost'],
             'subcommand': 'InRotation'
+        })
+
+        self.inrotation_params_good = copy.deepcopy(_base_params)
+        # Rotation commands require a list of hosts
+        self.inrotation_params_good['parameters'].update({
+            'hosts': ['localhost'],
+            'subcommand': 'InRotation'
+        })
+
+        self.outofrotation_params_good = copy.deepcopy(_base_params)
+        # Rotation commands require a list of hosts
+        self.outofrotation_params_good['parameters'].update({
+            'hosts': ['localhost'],
+            'subcommand': 'OutOfRotation'
         })
 
         ##############################################################
@@ -75,7 +89,7 @@ class TestBigipWorker(TestCase):
         # Sync command with the required environments (envs)
         self.configsync_params_good['parameters'].update({
             'subcommand': 'ConfigSync',
-            'envs': ['qa']
+            'envs': ['testenvironment']
         })
 
         ##############################################################
@@ -150,8 +164,18 @@ class TestBigipWorker(TestCase):
                 worker.validate_inputs(_params)
 
     def test_run_configsync_good(self):
-        """Config sync works correctly"""
+        """Config sync works correctly
+
+I'd write the negative test-case for this, but the argument validaton
+that preceeds the actual bigip call should catch mistakes before the
+call can be made.
+        """
         _params = self.configsync_params_good['parameters']
+
+        namespace = mock.Mock('argparse.Namespace')
+        parser = mock.MagicMock('argparse.ArgumentParser').__call__()
+        parser.parse_args.__call__().return_value = namespace
+
         with mock.patch('pika.SelectConnection'):
             worker = bigipworker.BigipWorker(
                 MQ_CONF,
@@ -161,11 +185,13 @@ class TestBigipWorker(TestCase):
             worker._on_open(self.connection)
             worker._on_channel_open(self.channel)
             worker.validate_inputs(_params)
-            worker.config_sync(self.parser)
+            worker.config_sync(parser)
 
-    def test_run_configsync_bad(self):
-        """Config sync fails"""
-        pass
+            parser.parse_args.assert_called_with(
+                ['sync', '-e', _params['envs'][0]])
+
+        # TODO: test with mocked out bigip classes a full call that
+        # invokes the bigip sync function
 
     ##################################################################
     # Rotation tests
@@ -199,18 +225,76 @@ class TestBigipWorker(TestCase):
     # In Rotation tests
     def test_run_inrotation_good(self):
         """InRotation works correctly"""
-        pass
+        _params = self.inrotation_params_good['parameters']
+        namespace = mock.Mock('argparse.Namespace')
+        parser = mock.MagicMock('argparse.ArgumentParser').__call__()
+        parser.parse_args.__call__().return_value = namespace
 
-    def test_run_inrotation_bad(self):
-        """InRotation works correctly"""
-        pass
+        with mock.patch('pika.SelectConnection'):
+            worker = bigipworker.BigipWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+            worker.validate_inputs(_params)
+
+            worker.in_rotation(parser)
+
+            parser.parse_args.assert_called_with(
+                ['state', '-e', _params['hosts'][0]])
 
     ##################################################################
     # Out Of Rotation tests
     def test_run_outofrotation_good(self):
         """OutOfRotation works correctly"""
-        pass
+        _params = self.outofrotation_params_good['parameters']
+        namespace = mock.Mock('argparse.Namespace')
+        parser = mock.MagicMock('argparse.ArgumentParser').__call__()
+        parser.parse_args.__call__().return_value = namespace
 
-    def test_run_outofrotation_bad(self):
-        """OutOfRotation works correctly"""
-        pass
+        with mock.patch('pika.SelectConnection'):
+            worker = bigipworker.BigipWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+            worker.validate_inputs(_params)
+
+            worker.out_of_rotation(parser)
+
+            parser.parse_args.assert_called_with(
+                ['state', '-d', _params['hosts'][0]])
+
+    # ##################################################################
+    # # Running the worker from the main process() entry-point
+    # def test_process(self):
+    #     param_methods = ['in_rotation', 'out_of_rotation', 'config_sync']
+    #     for params in [
+    #             self.inrotation_params_good,
+    #             self.outofrotation_params_good,
+    #             self.configsync_params_good]:
+
+    #         with mock.patch('pika.SelectConnection'):
+    #             worker = bigipworker.BigipWorker(
+    #                 MQ_CONF,
+    #                 logger=self.app_logger,
+    #                 output_dir='/tmp/logs/')
+
+    #             worker._on_open(self.connection)
+    #             worker._on_channel_open(self.channel)
+
+    #             method = param_methods.pop(0)
+    #             with mock.patch.object(worker, method) as mocked_method:
+    #                 worker.process(self.channel,
+    #                                self.basic_deliver,
+    #                                self.properties,
+    #                                params,
+    #                                self.app_logger)
+
+    #                 print mocked_method.call_args
+    #                 assert worker.subcommand == params['parameters']['subcommand']
+    #                 assert mocked_method.call_count == 1

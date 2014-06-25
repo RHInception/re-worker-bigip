@@ -75,7 +75,7 @@ class BigipWorker(Worker):
             self.send(
                 properties.reply_to,
                 corr_id,
-                {'status': 'completed', 'data': params['seconds']},
+                {'status': 'completed'},
                 exchange=''
             )
             # Notify on result. Not required but nice to do.
@@ -154,21 +154,24 @@ validation returns True.
         _cmd.extend(self.envs)
 
         args = parser.parse_args(_cmd)
-        args.func(args)
+        print args
+        # args.func(args)
 
     def in_rotation(self, parser):
         _cmd = [ 'state', '-e' ]
         _cmd.extend(self.hosts)
 
         args = parser.parse_args(_cmd)
-        args.func(args)
+        print args
+        # args.func(args)
 
     def out_of_rotation(self, parser):
         _cmd = [ 'state', '-d' ]
         _cmd.extend(self.hosts)
 
         args = parser.parse_args(_cmd)
-        args.func(args)
+        print args
+        # args.func(args)
 
 
 def main():  # pragma: no cover
