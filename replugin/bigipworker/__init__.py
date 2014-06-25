@@ -103,8 +103,10 @@ class BigipWorker(Worker):
     def validate_inputs(self, params):
         """Validate the inputs provided by the FSM.
 
-Side effect: Validated arguments are assigned to self.ARG. Such as
-self.envs for ConfigSync, and self.hosts for In/OutOfRotation.
+Side effects: Validated arguments are assigned to self.ARG. Such as
+self.envs for ConfigSync, and self.hosts for
+In/OutOfRotation. Invalidation raises BigipWorkerError, while
+validation returns True.
         """
 
         if not params.get('subcommand', None) in self.subcommands:
