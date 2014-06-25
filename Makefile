@@ -98,7 +98,7 @@ virtualenv:
 	. $(NAME)env/bin/activate && pip install pep8 nose coverage mock
 
 #       If there are any special things to install do it here
-
+	. $(NAME)env/bin/activate && cd $(REWORKERDIR) && wget https://github.com/RHInception/re-worker/archive/master.zip && unzip master && cd re-worker-master && pip install .
 
 ci-unittests:
 	@echo "#############################################"
