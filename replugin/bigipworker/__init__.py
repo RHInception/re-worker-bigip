@@ -18,8 +18,8 @@ F5 BigIP Load balancer
 """
 
 from reworker.worker import Worker
-import argparse
 import replugin.bigipworker.parser
+
 
 class BigipWorkerError(Exception):
     """
@@ -142,36 +142,27 @@ validation returns True.
                 raise BigipWorkerError(
                     'bigip:(In|OutOf)Rotation require a "hosts" parameter '
                     'but none was provided.')
-        else:
-            # You are not doing a real thing. Just stop. In fact, I
-            # don't know how you get this far anyway. This logic
-            # branch 'should be unreachable'....???
-            raise BigipWorkerError(
-                'Unknown error while validating inputs')
 
     def config_sync(self, parser):
-        _cmd = [ 'sync', '-e']
+        _cmd = ['sync', '-e']
         _cmd.extend(self.envs)
 
         args = parser.parse_args(_cmd)
-        print args
-        # args.func(args)
+        args.func(args)
 
     def in_rotation(self, parser):
-        _cmd = [ 'state', '-e' ]
+        _cmd = ['state', '-e']
         _cmd.extend(self.hosts)
 
         args = parser.parse_args(_cmd)
-        print args
-        # args.func(args)
+        args.func(args)
 
     def out_of_rotation(self, parser):
-        _cmd = [ 'state', '-d' ]
+        _cmd = ['state', '-d']
         _cmd.extend(self.hosts)
 
         args = parser.parse_args(_cmd)
-        print args
-        # args.func(args)
+        args.func(args)
 
 
 def main():  # pragma: no cover

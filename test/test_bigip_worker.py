@@ -20,6 +20,7 @@ import pika
 import mock
 import copy
 
+from contextlib import nested
 from . import TestCase
 from replugin import bigipworker
 from replugin.bigipworker import BigipWorkerError
@@ -121,6 +122,21 @@ class TestBigipWorker(TestCase):
 
         self.parser = replugin.bigipworker.parser.parser
 
+    def _assert_error_conditions(self, worker, error_msg):
+        """
+        Common asserts for handled errors.
+        """
+        # The FSM should be notified that this failed
+        assert worker.send.call_count == 2  # start then error
+        assert worker.send.call_args[0][2]['status'] == 'failed'
+
+        # Notification should be a failure
+        assert worker.notify.call_count == 1
+        assert error_msg in worker.notify.call_args[0][1]
+        assert worker.notify.call_args[0][2] == 'failed'
+        # Log should happen as an error
+        assert self.logger.error.call_count == 1
+
     ##################################################################
     # Subcommand tests
     def test_subcommand_invalid(self):
@@ -172,7 +188,8 @@ call can be made.
         """
         _params = self.configsync_params_good['parameters']
 
-        namespace = mock.Mock('argparse.Namespace')
+        namespace = mock.Mock('argparse.Namespace', name="parse_args result")
+        namespace.func = mock.MagicMock(name="namespace default function")
         parser = mock.MagicMock('argparse.ArgumentParser').__call__()
         parser.parse_args.__call__().return_value = namespace
 
@@ -189,9 +206,6 @@ call can be made.
 
             parser.parse_args.assert_called_with(
                 ['sync', '-e', _params['envs'][0]])
-
-        # TODO: test with mocked out bigip classes a full call that
-        # invokes the bigip sync function
 
     ##################################################################
     # Rotation tests
@@ -269,32 +283,59 @@ call can be made.
             parser.parse_args.assert_called_with(
                 ['state', '-d', _params['hosts'][0]])
 
-    # ##################################################################
-    # # Running the worker from the main process() entry-point
-    # def test_process(self):
-    #     param_methods = ['in_rotation', 'out_of_rotation', 'config_sync']
-    #     for params in [
-    #             self.inrotation_params_good,
-    #             self.outofrotation_params_good,
-    #             self.configsync_params_good]:
+    ##################################################################
+    # Running the worker from the main process() entry-point
+    def test_process_no_parameters(self):
+        """Error if we aren't passed parameters from the FSM"""
+        with nested(
+                mock.patch('pika.SelectConnection'),
+                mock.patch('replugin.bigipworker.BigipWorker.notify'),
+                mock.patch('replugin.bigipworker.BigipWorker.send')):
+            worker = bigipworker.BigipWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                output_dir='/tmp/logs/')
 
-    #         with mock.patch('pika.SelectConnection'):
-    #             worker = bigipworker.BigipWorker(
-    #                 MQ_CONF,
-    #                 logger=self.app_logger,
-    #                 output_dir='/tmp/logs/')
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
 
-    #             worker._on_open(self.connection)
-    #             worker._on_channel_open(self.channel)
+            worker.process(self.channel,
+                           self.basic_deliver,
+                           self.properties,
+                           {},
+                           self.logger)
 
-    #             method = param_methods.pop(0)
-    #             with mock.patch.object(worker, method) as mocked_method:
-    #                 worker.process(self.channel,
-    #                                self.basic_deliver,
-    #                                self.properties,
-    #                                params,
-    #                                self.app_logger)
+            self._assert_error_conditions(
+                worker, 'Parameters dictionary not passed')
 
-    #                 print mocked_method.call_args
-    #                 assert worker.subcommand == params['parameters']['subcommand']
-    #                 assert mocked_method.call_count == 1
+    def test_process(self):
+        """Everything is called correctly from process()"""
+        # TODO: test with mocked out bigip classes a FULL call that
+        # invokes the bigip
+
+        param_methods = ['in_rotation', 'out_of_rotation', 'config_sync']
+        for params in [
+                self.inrotation_params_good,
+                self.outofrotation_params_good,
+                self.configsync_params_good]:
+
+            with mock.patch('pika.SelectConnection'):
+                worker = bigipworker.BigipWorker(
+                    MQ_CONF,
+                    logger=self.app_logger,
+                    output_dir='/tmp/logs/')
+
+                worker._on_open(self.connection)
+                worker._on_channel_open(self.channel)
+
+                method = param_methods.pop(0)
+                with mock.patch.object(worker, method) as mocked_method:
+                    worker.process(self.channel,
+                                   self.basic_deliver,
+                                   self.properties,
+                                   params,
+                                   self.app_logger)
+
+                    print mocked_method.call_args
+                    assert worker.subcommand == params['parameters']['subcommand']
+                    assert mocked_method.call_count == 1
