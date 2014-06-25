@@ -19,7 +19,7 @@ Url: https://github.com/rhinception/re-worker-bigip
 
 BuildArch: noarch
 BuildRequires: python2-devel, python-setuptools
-Requires: re-worker, python-setuptools
+Requires: re-worker, python-setuptools, python-argparse, bigip
 
 %description
 A Release Engine Worker Plugin that bigips for a period of seconds.

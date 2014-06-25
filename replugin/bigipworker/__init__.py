@@ -18,7 +18,7 @@ F5 BigIP Load balancer
 """
 
 from reworker.worker import Worker
-
+import argparse
 
 class BigipWorkerError(Exception):
     """
@@ -31,6 +31,8 @@ class BigipWorker(Worker):
     """
     Worker to manipulate nodes and balancers in F5 BigIP devices.
     """
+
+    subcommands = ('InRotation', 'OutOfRotation', 'ConfigSync')
 
     def process(self, channel, basic_deliver, properties, body, output):
         """
@@ -54,6 +56,19 @@ class BigipWorker(Worker):
                     'Parameters dictionary not passed to BigIPWorker.'
                     ' Nothing to do!')
 
+            ##########################################################
+            # Validate inputs
+
+
+            #
+
+            #
+
+
+
+
+
+            ##########################################################
             self.app_logger.info('Success for bigip')
             self.send(
                 properties.reply_to,
@@ -84,6 +99,45 @@ class BigipWorker(Worker):
                 'failed',
                 corr_id)
             output.error(str(fwe))
+
+    def validate_inputs(self, params):
+        """Validate the inputs provided by the FSM.
+
+Side effect: Validated arguments are assigned to self.ARG. Such as
+self.envs for ConfigSync, and self.hosts for In/OutOfRotation.
+        """
+
+        if not params.get('subcommand', None) in self.subcommands:
+            raise BigipWorkerError('Invalid subcommand: ' % (
+                params.get('subcommand', None)))
+        else:
+            self.subcommand = params['subcommand']
+
+        if self.subcommand == 'ConfigSync':
+            # ConfigSync needs an array of environments, 'envs'
+            try:
+                self.envs = params['envs']
+                return True
+            except KeyError:
+                raise BigipWorkerError(
+                    'bigip:ConfigSync requires an array of environments '
+                    'to sync, but no "envs" parameter was provided')
+        elif self.subcommand in ['InRotation', 'OutOfRotation']:
+            # [In/OutOf]Rotation need hostnames
+            try:
+                self.hosts = params['hosts']
+                return True
+            except KeyError:
+                raise BigipWorkerError(
+                    'bigip:(In|OutOf)Rotation require a "hosts" parameter '
+                    'but none was provided.')
+        else:
+            # You are not doing a real thing. Just stop. In fact, I
+            # don't know how you get this far anyway. This logic
+            # branch 'should be unreachable'....???
+            raise BigipWorkerError(
+                'Unknown error while validating inputs')
+
 
 
 def main():  # pragma: no cover
