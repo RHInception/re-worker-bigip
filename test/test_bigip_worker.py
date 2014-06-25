@@ -22,6 +22,7 @@ import copy
 
 from . import TestCase
 from replugin import bigipworker
+from replugin.bigipworker import BigipWorkerError
 
 MQ_CONF = {
     'server': '127.0.0.1',
@@ -103,18 +104,19 @@ class TestBigipWorker(TestCase):
         self.logger = mock.MagicMock('logging.Logger').__call__()
         self.connection = mock.MagicMock('pika.SelectConnection')
 
-    @mock.patch('pika.SelectConnection')
     def test_subcommand_invalid(self):
         """Invalid subcommands are caught and abort"""
-        # self.subcommand_params_bad
-        worker = bigipworker.BigipWorker(
-            MQ_CONF,
-            logger=self.app_logger,
-            output_dir='/tmp/logs/')
+        with mock.patch('pika.SelectConnection'):
+            worker = bigipworker.BigipWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                output_dir='/tmp/logs/')
 
-        worker._on_open(self.connection)
-        worker._on_channel_open(self.channel)
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
 
+            with self.assertRaises(BigipWorkerError):
+                worker.validate_inputs(self.subcommand_params_bad)
 
 
     def test_configsync_validation_good(self):

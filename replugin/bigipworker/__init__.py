@@ -108,7 +108,7 @@ self.envs for ConfigSync, and self.hosts for In/OutOfRotation.
         """
 
         if not params.get('subcommand', None) in self.subcommands:
-            raise BigipWorkerError('Invalid subcommand: ' % (
+            raise BigipWorkerError('Invalid subcommand: %s' % (
                 params.get('subcommand', None)))
         else:
             self.subcommand = params['subcommand']
