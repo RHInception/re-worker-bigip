@@ -106,6 +106,7 @@ class TestBigipWorker(TestCase):
 
     def test_subcommand_invalid(self):
         """Invalid subcommands are caught and abort"""
+        _params = self.subcommand_params_bad['parameters']
         with mock.patch('pika.SelectConnection'):
             worker = bigipworker.BigipWorker(
                 MQ_CONF,
@@ -116,56 +117,56 @@ class TestBigipWorker(TestCase):
             worker._on_channel_open(self.channel)
 
             with self.assertRaises(BigipWorkerError):
-                worker.validate_inputs(self.subcommand_params_bad['parameters'])
+                worker.validate_inputs(_params)
 
     def test_configsync_validation_good(self):
         """Good configsync params pass validation"""
+        _params = self.configsync_params_good['parameters']
         with mock.patch('pika.SelectConnection'):
             worker = bigipworker.BigipWorker(
                 MQ_CONF,
                 logger=self.app_logger,
                 output_dir='/tmp/logs/')
 
-            worker._on_open(self.connection)
-            worker._on_channel_open(self.channel)
-
-            result = worker.validate_inputs(self.configsync_params_good['parameters'])
+            result = worker.validate_inputs(_params)
             assert result == True
-            assert worker.subcommand == self.configsync_params_good['parameters']['subcommand']
-            assert worker.envs == self.configsync_params_good['parameters']['envs']
+            assert worker.subcommand == _params['subcommand']
+            assert worker.envs == _params['envs']
 
     def test_configsync_validation_bad(self):
         """Bad configsync params are caught and abort"""
+        _params = self.configsync_params_bad['parameters']
         with mock.patch('pika.SelectConnection'):
             worker = bigipworker.BigipWorker(
                 MQ_CONF,
                 logger=self.app_logger,
                 output_dir='/tmp/logs/')
 
-            worker._on_open(self.connection)
-            worker._on_channel_open(self.channel)
-        # self.configsync_params_bad
+            with self.assertRaises(BigipWorkerError):
+                worker.validate_inputs(_params)
 
     def test_rotation_validation_good(self):
         """Good rotation params pass validation"""
+        _params =  self.rotation_params_good['parameters']
         with mock.patch('pika.SelectConnection'):
             worker = bigipworker.BigipWorker(
                 MQ_CONF,
                 logger=self.app_logger,
                 output_dir='/tmp/logs/')
 
-            worker._on_open(self.connection)
-            worker._on_channel_open(self.channel)
-        # self.rotation_params_good
+            result = worker.validate_inputs(_params)
+            assert result == True
+            assert worker.subcommand == _params['subcommand']
+            assert worker.hosts == _params['hosts']
 
     def test_rotation_validation_bad(self):
         """Bad rotation params are caught and abort"""
+        _params =  self.rotation_params_bad['parameters']
         with mock.patch('pika.SelectConnection'):
             worker = bigipworker.BigipWorker(
                 MQ_CONF,
                 logger=self.app_logger,
                 output_dir='/tmp/logs/')
 
-            worker._on_open(self.connection)
-            worker._on_channel_open(self.channel)
-        # self.rotation_params_bad
+            with self.assertRaises(BigipWorkerError):
+                worker.validate_inputs(_params)
