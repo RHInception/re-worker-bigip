@@ -19,6 +19,7 @@ F5 BigIP Load balancer
 
 from reworker.worker import Worker
 import argparse
+import replugin.bigipworker.parser
 
 class BigipWorkerError(Exception):
     """
@@ -57,19 +58,20 @@ class BigipWorker(Worker):
                     ' Nothing to do!')
 
             ##########################################################
-            # Validate inputs
-
-
-            #
-
-            #
-
-
-
-
+            # This will either return True or raise a BigipWorkerError
+            self.validate_inputs(params)
+            parser = replugin.bigipworker.parser.parser
 
             ##########################################################
-            self.app_logger.info('Success for bigip')
+            if self.subcommand == 'ConfigSync':
+                self.config_sync(parser)
+            elif self.subcommand == 'InRotation':
+                self.in_rotation(parser)
+            elif self.subcommand == 'OutOfRotation':
+                self.out_of_rotation(parser)
+
+            ##########################################################
+            self.app_logger.info('Success for %s' % self._cmd_repr)
             self.send(
                 properties.reply_to,
                 corr_id,
@@ -79,7 +81,8 @@ class BigipWorker(Worker):
             # Notify on result. Not required but nice to do.
             self.notify(
                 'BigipWorker Executed Successfully',
-                'BigipWorker successfully executed bigip(%s). See logs.',
+                'BigipWorker successfully executed %s. See logs.' % (
+                    self._cmd_repr),
                 'completed',
                 corr_id)
         except BigipWorkerError, fwe:
@@ -119,6 +122,9 @@ validation returns True.
             # ConfigSync needs an array of environments, 'envs'
             try:
                 self.envs = params['envs']
+                self._cmd_repr = "bigip:%s %s" % (
+                    self.subcommand,
+                    ",".join(self.envs))
                 return True
             except KeyError:
                 raise BigipWorkerError(
@@ -128,6 +134,9 @@ validation returns True.
             # [In/OutOf]Rotation need hostnames
             try:
                 self.hosts = params['hosts']
+                self._cmd_repr = "bigip:%s %s" % (
+                    self.subcommand,
+                    ",".join(self.hosts))
                 return True
             except KeyError:
                 raise BigipWorkerError(
@@ -140,6 +149,26 @@ validation returns True.
             raise BigipWorkerError(
                 'Unknown error while validating inputs')
 
+    def config_sync(self, parser):
+        _cmd = [ 'sync', '-e']
+        _cmd.extend(self.envs)
+
+        args = parser.parse_args(_cmd)
+        args.func(args)
+
+    def in_rotation(self, parser):
+        _cmd = [ 'state', '-e' ]
+        _cmd.extend(self.hosts)
+
+        args = parser.parse_args(_cmd)
+        args.func(args)
+
+    def out_of_rotation(self, parser):
+        _cmd = [ 'state', '-d' ]
+        _cmd.extend(self.hosts)
+
+        args = parser.parse_args(_cmd)
+        args.func(args)
 
 
 def main():  # pragma: no cover
