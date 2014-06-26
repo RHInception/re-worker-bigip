@@ -52,6 +52,7 @@ class BigipWorker(Worker):
             try:
                 params = body['parameters']
             except KeyError:
+                output.debug("Aborting bigip run, no parameters passed")
                 raise BigipWorkerError(
                     'Parameters dictionary not passed to BigIPWorker.'
                     ' Nothing to do!')
@@ -62,6 +63,7 @@ class BigipWorker(Worker):
             parser = replugin.bigipworker.parser.parser
 
             ##########################################################
+            output.debug("About to run %s" % self._cmd_repr)
             if self.subcommand == 'ConfigSync':
                 self.config_sync(parser)
             elif self.subcommand == 'InRotation':
@@ -87,6 +89,8 @@ class BigipWorker(Worker):
         except BigipWorkerError, fwe:
             # If a BigipWorkerError happens send a failure, notify and log
             # the info for review.
+            output.debug("Unknown BigIP Error: %s" % fwe)
+
             self.app_logger.error('Failure: %s' % fwe)
 
             self.send(
