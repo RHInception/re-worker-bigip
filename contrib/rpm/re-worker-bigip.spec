@@ -8,9 +8,9 @@
 %global _src_name reworkerbigip
 
 Name: re-worker-bigip
-Summary: RE Worker which bigips for a number of seconds
+Summary: RE Worker which interacts with F5 BigIPs
 Version: 0.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 
 Group: Applications/System
 License: AGPLv3
@@ -22,7 +22,9 @@ BuildRequires: python2-devel, python-setuptools
 Requires: re-worker, python-setuptools, python-argparse, bigip
 
 %description
-A Release Engine Worker Plugin that bigips for a period of seconds.
+A Release Engine Worker Plugin that will enable and disable nodes in
+F5 BigIP load balancers, as well as configuration sync from active to
+failover devices.
 
 %prep
 %setup -q -n %{_src_name}-%{version}
@@ -39,5 +41,8 @@ A Release Engine Worker Plugin that bigips for a period of seconds.
 %exclude %{python2_sitelib}/%{_pkg_name}/__init__.py*
 
 %changelog
+* Thu Jun 26 2014 Tim Bielawa <tbielawa@redhat.com> - 0.0.1-2
+- Fix package description
+
 * Tue Jun 24 2014 Tim Bielawa <tbielawa@redhat.com> - 0.0.1-1
 - First package
