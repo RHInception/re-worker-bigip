@@ -207,7 +207,7 @@ validation returns True.
         return self._show(parser)
 
     def _show(self, parser):
-        _cmd = ['show', '-d']
+        _cmd = ['show']
         _cmd.extend(self.hosts)
 
         args = parser.parse_args(_cmd)
