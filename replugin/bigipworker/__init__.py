@@ -94,13 +94,12 @@ class BigipWorker(Worker):
             output.debug("bigip: About to run %s" % self._cmd_repr)
 
             if self.subcommand == 'ConfigSync':
-                _out = self.config_sync(parser)
+                self.config_sync(parser)
+                output.info("Sync'd environment(s)")
             elif self.subcommand == 'InRotation':
-                _out = self.in_rotation(parser)
+                output.info(self.in_rotation(parser))
             elif self.subcommand == 'OutOfRotation':
-                _out = self.out_of_rotation(parser)
-
-            output.info(_out)
+                output.info(self.out_of_rotation(parser))
 
             ##########################################################
             self.app_logger.info('bigip: Success for %s' % self._cmd_repr)
@@ -189,17 +188,26 @@ validation returns True.
         _cmd.extend(self.envs)
 
         args = parser.parse_args(_cmd)
-        return mute(returns_output=True)(args.func)(args)
+        args.func(args)
 
     def in_rotation(self, parser):
         _cmd = ['state', '-e']
         _cmd.extend(self.hosts)
 
         args = parser.parse_args(_cmd)
-        return mute(returns_output=True)(args.func)(args)
+        args.func(args)
+        return self._show(parser)
 
     def out_of_rotation(self, parser):
         _cmd = ['state', '-d']
+        _cmd.extend(self.hosts)
+
+        args = parser.parse_args(_cmd)
+        args.func(args)
+        return self._show(parser)
+
+    def _show(self, parser):
+        _cmd = ['show', '-d']
         _cmd.extend(self.hosts)
 
         args = parser.parse_args(_cmd)

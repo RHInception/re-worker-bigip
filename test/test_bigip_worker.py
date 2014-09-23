@@ -256,7 +256,8 @@ call can be made.
 
             worker.in_rotation(parser)
 
-            parser.parse_args.assert_called_with(
+            self.assertEqual(parser.parse_args.call_count, 3)
+            parser.parse_args.mock_calls[1].assert_called_with(
                 ['state', '-e', _params['hosts'][0]])
 
     ##################################################################
@@ -280,7 +281,9 @@ call can be made.
 
             worker.out_of_rotation(parser)
 
-            parser.parse_args.assert_called_with(
+            self.assertEqual(parser.parse_args.call_count, 3)
+            print parser.parse_args.mock_calls[1]
+            parser.parse_args.mock_calls[1].assert_called_with(
                 ['state', '-d', _params['hosts'][0]])
 
     ##################################################################
