@@ -41,3 +41,4 @@ htmlcov
 MANIFEST
 re-coreenv/
 cover
+re-worker-bigipenv

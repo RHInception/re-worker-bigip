@@ -10,7 +10,7 @@
 Name: re-worker-bigip
 Summary: RE Worker which interacts with F5 BigIPs
 Version: 0.0.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 
 Group: Applications/System
 License: AGPLv3
@@ -41,6 +41,9 @@ failover devices.
 %exclude %{python2_sitelib}/%{_pkg_name}/__init__.py*
 
 %changelog
+* Tue Sep 23 2014 Tim Bielawa <tbielawa@redhat.com> - 0.0.1-4
+- Print results from calls to bigip api
+
 * Thu Jun 26 2014 Tim Bielawa <tbielawa@redhat.com> - 0.0.1-3
 - Add in logging statements
 

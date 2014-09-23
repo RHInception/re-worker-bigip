@@ -28,6 +28,14 @@ SHORTNAME := replugin
 
 SRCDIR := replugin/bigipworker
 
+################
+# For CI deps
+TMPDIR = $(shell mktemp -d)
+FUNCDIR := $(TMPDIR)
+REWORKERDIR := $(TMPDIR)
+CMDIR := $(TMPDIR)
+
+
 sdist: clean
 	python setup.py sdist
 	rm -fR bigipworker.egg-info
